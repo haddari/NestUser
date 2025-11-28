@@ -62,14 +62,17 @@ $ npm run test:cov
 
 Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
 
-## Stay in touch
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
 
 ## License
 
 Nest is [MIT licensed](LICENSE).
 
 # NestUser
+
+## Author
+
+I built this small project to help Nest users get a full user management flow (signup, email verification via a 6‑digit code, login, roles, and guards) and speed up starting new backends.
+
+- Author: haddari
+- Contact: salim90hadd@gmail.com
