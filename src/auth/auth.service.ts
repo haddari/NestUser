@@ -19,6 +19,7 @@ import { nanoid } from 'nanoid';
 import { ResetToken } from './schemas/reset-token.schema';
 import { MailService } from 'src/services/mail.service';
 import { RolesService } from 'src/roles/roles.service';
+import { VerifyEmailDto } from './dtos/verify-email.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,7 +35,7 @@ export class AuthService {
   ) {}
 
   async signup(signupData: SignupDto) {
-    const { email, password, name,roleId } = signupData;
+    const { email, password, name, roleId } = signupData;
   
     // Check if email is in use
     const emailInUse = await this.UserModel.findOne({ email });
@@ -45,18 +46,31 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
   
+    // Prepare email verification
+    const verificationToken = nanoid(64);
+    const emailVerificationCode = String(Math.floor(100000 + Math.random() * 900000));
+    const emailVerificationExpires = new Date();
+    emailVerificationExpires.setHours(emailVerificationExpires.getHours() + 24);
+
     // Create user document and save in MongoDB
     const createdUser = await this.UserModel.create({
       roleId,
       name,
       email,
       password: hashedPassword,
+      emailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires,
+      emailVerificationCode,
     });
-  
-    // Return the response with statusCode and user information
+
+    // Send email verification email with code
+    await this.mailService.sendEmailVerificationEmail(email, emailVerificationCode);
+
     return {
       statusCode: HttpStatus.OK,
-      data: createdUser,
+      message: 'Signup successful. Please verify your email.',
+      data: { id: createdUser._id, email: createdUser.email, emailVerified: createdUser.emailVerified },
     };
   }
 
@@ -76,6 +90,21 @@ export class AuthService {
       throw new UnauthorizedException('Wrong credentials');
     }
   
+    // Require email verification
+    if (!user.emailVerified) {
+      const expired = !user.emailVerificationExpires || user.emailVerificationExpires < new Date();
+      if (expired || !user.emailVerificationCode) {
+        const emailVerificationCode = String(Math.floor(100000 + Math.random() * 900000));
+        const emailVerificationExpires = new Date();
+        emailVerificationExpires.setHours(emailVerificationExpires.getHours() + 24);
+        user.emailVerificationCode = emailVerificationCode;
+        user.emailVerificationExpires = emailVerificationExpires;
+        await user.save();
+      }
+      await this.mailService.sendEmailVerificationEmail(user.email, user.emailVerificationCode);
+      throw new UnauthorizedException('Email not verified. Verification code sent.');
+    }
+
     // Generate JWT tokens
     const tokens = await this.generateUserTokens(user._id);
   
@@ -195,5 +224,24 @@ export class AuthService {
 
     const role = await this.rolesService.getRoleById(user.roleId.toString());
     return role.permissions;
+  }
+
+  async verifyEmail(code: string) {
+    const user = await this.UserModel.findOne({
+      emailVerificationCode: code,
+      emailVerificationExpires: { $gte: new Date() },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid or expired verification token');
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationCode = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    return { statusCode: HttpStatus.OK, message: 'Email verified successfully' };
   }
 }

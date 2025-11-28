@@ -14,6 +14,18 @@ export class User extends Document {
 
   @Prop({ required: false, type: SchemaTypes.ObjectId })
   roleId: Types.ObjectId;
+
+  @Prop({ default: false })
+  emailVerified: boolean;
+
+  @Prop({ required: false })
+  emailVerificationToken?: string;
+
+  @Prop({ required: false })
+  emailVerificationExpires?: Date;
+
+  @Prop({ required: false })
+  emailVerificationCode?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

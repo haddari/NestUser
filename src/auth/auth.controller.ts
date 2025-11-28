@@ -7,6 +7,7 @@ import { ChangePasswordDto } from './dtos/change-password.dto';
 import { AuthenticationGuard } from 'src/guards/authentication.guard';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { VerifyEmailDto } from './dtos/verify-email.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -53,5 +54,10 @@ export class AuthController {
       resetPasswordDto.newPassword,
       resetPasswordDto.resetToken,
     );
+  }
+
+  @Post('verify-email')
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto.code);
   }
 }

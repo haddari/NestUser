@@ -13,7 +13,7 @@ export class SignupDto {
   password: string;
 
   @IsString()
-  @MinLength(6)
+  @MinLength(4)
   roleId :String
 
 }
